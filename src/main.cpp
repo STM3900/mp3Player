@@ -8,6 +8,17 @@
 SoftwareSerial mySoftwareSerial(2, 8); // RX, TX ( wemos D2,D8 ou 4,15 GPIO )  ou Tx,RX ( Dfplayer )
 DFRobotDFPlayerMini myDFPlayer;        // init player
 
+#define DELAY 500 // Delay between two measurements in ms
+#define VIN 5     // V power voltage
+#define R 10000   // ohm resistance value
+
+// Parameters
+const int sensorPin = A0; // Pin connected to sensor
+
+// Variables
+int sensorVal; // Analog value from the sensor
+float res;     // resistance value
+
 const int buttonPreviousPin = 7;
 const int buttonPausePin = 6;
 const int buttonNextPin = 5;
@@ -56,6 +67,7 @@ void setup()
 
 void loop()
 {
+
   buttonPreviousState = digitalRead(buttonPreviousPin);
   buttonPauseState = digitalRead(buttonPausePin);
   buttonNextState = digitalRead(buttonNextPin);
@@ -95,6 +107,16 @@ void loop()
   else
   {
     isPressed = false;
+  }
+
+  if (!isPaused)
+  {
+    sensorVal = analogRead(sensorPin);
+    Serial.print(F("Raw value from sensor= "));
+    Serial.println((sensorVal * 30) / 1023); // the analog reading
+
+    myDFPlayer.volume((sensorVal * 30) / 1023);
+    delay(200);
   }
 
   //  myDFPlayer.volume(30);
