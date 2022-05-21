@@ -23,12 +23,19 @@ const int buttonPreviousPin = 7;
 const int buttonPausePin = 6;
 const int buttonNextPin = 5;
 
+const int isBusyPin = 13;
+
 int buttonPreviousState = 0;
 int buttonPauseState = 0;
 int buttonNextState = 0;
 
+int isBusyState = 0;
+
 bool isPressed = false;
 bool isPaused = false;
+
+int previousSound = 0;
+int sensorValSimplified = 0;
 
 void setup()
 {
@@ -38,6 +45,8 @@ void setup()
   pinMode(buttonPreviousPin, INPUT);
   pinMode(buttonPausePin, INPUT);
   pinMode(buttonNextPin, INPUT);
+
+  pinMode(isBusyPin, INPUT);
 
   if (!myDFPlayer.begin(mySoftwareSerial))
   { // Utilisation de  softwareSerial pour communiquer
@@ -62,12 +71,11 @@ void setup()
 
   // Joue le premier morceau de la liste
   myDFPlayer.play(1);
-  myDFPlayer.enableLoop();
+  delay(200); // cringe (ça sert a eviter un bug)
 }
 
 void loop()
 {
-
   buttonPreviousState = digitalRead(buttonPreviousPin);
   buttonPauseState = digitalRead(buttonPausePin);
   buttonNextState = digitalRead(buttonNextPin);
@@ -76,6 +84,7 @@ void loop()
   {
     Serial.println(F("Bouton previous allumé"));
     myDFPlayer.previous();
+    delay(1000);
   }
 
   if (buttonPauseState == HIGH && !isPressed)
@@ -91,6 +100,7 @@ void loop()
       Serial.println(F("Bouton play allumé"));
       myDFPlayer.start();
       isPaused = false;
+      delay(500);
     }
   }
 
@@ -98,6 +108,7 @@ void loop()
   {
     Serial.println(F("Bouton next allumé"));
     myDFPlayer.next();
+    delay(1000);
   }
 
   if (buttonPreviousState == HIGH || buttonPauseState == HIGH || buttonNextState == HIGH)
@@ -109,14 +120,30 @@ void loop()
     isPressed = false;
   }
 
-  if (!isPaused)
+  sensorVal = analogRead(sensorPin);
+  sensorValSimplified = (sensorVal * 30) / 1024;
+
+  bool isSoundChanged = (previousSound < (sensorValSimplified - 1)) || (previousSound > (sensorValSimplified + 1));
+
+  if (!isPaused && isSoundChanged)
   {
     sensorVal = analogRead(sensorPin);
-    Serial.print(F("Raw value from sensor= "));
-    Serial.println((sensorVal * 30) / 1023); // the analog reading
-
-    myDFPlayer.volume((sensorVal * 30) / 1023);
+    myDFPlayer.volume(sensorValSimplified);
+    Serial.println(F("AAAAAAA"));
     delay(200);
+  }
+
+  if (isSoundChanged)
+  {
+    previousSound = sensorValSimplified;
+  }
+
+  isBusyState = digitalRead(isBusyPin);
+
+  if (!isPaused && isBusyState == 1)
+  {
+    myDFPlayer.next();
+    delay(1000);
   }
 
   //  myDFPlayer.volume(30);
